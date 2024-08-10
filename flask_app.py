@@ -3,23 +3,27 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-TELEGRAM_TOKEN = '7201807860:AAFrdTVZaZfNNUWi70SV1mKibsItmveEItQ'
-CHAT_ID = '352566109'
+# Вставь сюда свой токен Telegram
+TELEGRAM_BOT_TOKEN = '7201807860:AAFrdTVZaZfNNUWi70SV1mKibsItmveEItQ'
+TELEGRAM_CHAT_ID = '352566109'
 
-
-def send_message(text):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": text}
-    requests.post(url, json=payload)
-
+def send_message_to_telegram(text):
+    url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
+    data = {'chat_id': TELEGRAM_CHAT_ID, 'text': text}
+    response = requests.post(url, data=data)
+    return response
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.json
-    # Здесь можно обрабатывать данные и формировать сообщение
-    send_message(f"Новое событие: {data}")
-    return 'OK'
+    task_title = data['data']['FIELDS']['TITLE']  # Пример: берем название задачи
+    message = f'Новая задача создана: {task_title}'
+    send_message_to_telegram(message)
+    return 'OK', 200
 
+# Добавление обработки корневого маршрута
+@app.route('/')
+def index():
+    return 'Webhook is active. Please send data to /webhook endpoint.', 200
 
-if __name__ == '__main__':
-    app.run(port=5000)
+# app.run() не нужен для развертывания на Vercel, его можно удалить
