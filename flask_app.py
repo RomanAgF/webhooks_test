@@ -13,17 +13,35 @@ def send_message_to_telegram(text):
     response = requests.post(url, data=data)
     return response
 
+# Добавляем обработчик вебхука
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    data = request.json
-    task_title = data['data']['FIELDS']['TITLE']  # Пример: берем название задачи
-    message = f'Новая задача создана: {task_title}'
-    send_message_to_telegram(message)
-    return 'OK', 200
+    try:
+        data = request.json  # Получаем данные из POST-запроса
+        print(f"Received data: {data}")  # Логируем полученные данные
 
-# Добавление обработки корневого маршрута
+        if 'event' in data:
+            event_type = data['event']
+            if event_type == 'ONCRMLEADADD':
+                lead_title = data['data']['FIELDS']['TITLE']
+                message = f'Новый лид создан: {lead_title}'
+                send_message_to_telegram(message)
+            elif event_type == 'ONCRMPRODUCTADD':
+                product_name = data['data']['FIELDS']['NAME']
+                message = f'Новый товар создан: {product_name}'
+                send_message_to_telegram(message)
+            else:
+                message = 'Неизвестное событие.'
+                send_message_to_telegram(message)
+
+        return 'OK', 200
+    except Exception as e:
+        print(f"Error: {e}")  # Логируем ошибки, если они есть
+        return 'Error', 500
+
 @app.route('/')
 def index():
     return 'Webhook is active. Please send data to /webhook endpoint.', 200
 
-# app.run() не нужен для развертывания на Vercel, его можно удалить
+if __name__ == '__main__':
+    app.run()
